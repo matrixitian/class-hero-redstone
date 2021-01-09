@@ -6,31 +6,33 @@ const School = require('../models/school')
 const ScheduleTimes = require('../models/schedule/schedule_times')
 const RoomList = require('../models/room_list')
 const generate = require('../generator')
+const log = console.log
 
 router.post('/create-planer', async (req, res) => {
     const creatorKey = req.body.creatorKey
 
     let planerObj = {
-        ...req.body.planerObj,
+        ...req.body,
         password: generate('password'),
         recoveryKey: generate('recovery_key')
     }
 
     try {
-        if (!(creatorKey === process.env.CREATOR_CODE)) throw new Error()
+        if (!(creatorKey === process.env.CREATOR_CODE)) throw new Error('Access key invalid.')
          // Create Planer Account
         const generatedUsername = await Planer.generatePlanerUsername('planer', planerObj.schoolName, planerObj.city)
         planerObj.username = generatedUsername
 
-        planer = new Planer(planerObj)
+        const planer = new Planer(planerObj)
         await planer.save()
-
+        
          // Create School
         const school = new School({
-            name: req.body.planerObj.schoolName,
-            city: req.body.planerObj.city,
+            name: req.body.schoolName,
+            city: req.body.city,
             owner: planer._id
         })
+        
         const savedSchool = await school.save()
         planer.schoolID = savedSchool._id
         await planer.save() // assign School to Planer
